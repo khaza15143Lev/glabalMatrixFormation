@@ -667,11 +667,11 @@
 
         // transformation matrix (6x6)
         let T = Array.from({length:6},()=>Array(6).fill(0));
-        T[0][0] =  c; T[0][1] = -s;
-        T[1][0] =  s; T[1][1] =  c;
+        T[0][0] =  c; T[0][1] = s;
+        T[1][0] =  -s; T[1][1] =  c;
         T[2][2] =  1;
-        T[3][3] =  c; T[3][4] = -s;
-        T[4][3] =  s; T[4][4] =  c;
+        T[3][3] =  c; T[3][4] = s;
+        T[4][3] =  -s; T[4][4] =  c;
         T[5][5] =  1;
 
         function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
