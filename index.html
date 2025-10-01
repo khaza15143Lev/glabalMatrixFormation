@@ -267,8 +267,8 @@
     }
 
     // Generate problem statement values
-    const nn = getRandomInt(4, 10);  // number of nodes
-    const k1 = Math.random() < 0.5 ? 2 : 3; // dof per node
+    const nn = getRandomInt(5, 6);  // number of nodes
+    const k1 = 3 // Math.random() < 0.5 ? 2 : 3; // dof per node
     const elementMatrixSize = k1 * 2;
     const globalMatrixSize = nn * k1;
 	Coord = []
@@ -437,7 +437,7 @@
             for (let j = 0; j < size; j++) {
                 const cell = document.createElement('div');
                 cell.className = 'display-cell';
-                cell.textContent = elementMatrixValues[i][j].toFixed(2);
+                cell.textContent = elementMatrixValues[i][j].toFixed(4);
                 container.appendChild(cell);
             }
         }
@@ -555,7 +555,7 @@
                 const currentValue = parseFloat(globalMatrixValues[globalRow][globalCol]);
                 const newValue = currentValue + elementMatrixValues[i][j];
                 globalMatrixValues[globalRow][globalCol] = newValue;
-                globalCells[globalElementIndex].textContent = newValue.toFixed(2);
+                globalCells[globalElementIndex].textContent = newValue.toFixed(4);
 
                 elementCells[localElementIndex].style.backgroundColor = highlightColor;
                 globalCells[globalElementIndex].style.backgroundColor = highlightColor;
