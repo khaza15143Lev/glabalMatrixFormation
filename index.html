@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mixed-Size Matrix Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .value {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .matrices-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .matrix-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        .matrix-section h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .controls label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .controls input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .controls button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2ecc71;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .controls button:hover:not(:disabled) {
+            background-color: #27ae60;
+        }
+
+        .controls button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .controls button.adding {
+            background-color: #f39c12;
+        }
+
+        .matrix-container {
+            display: grid;
+            margin: 0 auto;
+            max-width: fit-content;
+        }
+        .matrix-grid {
+            display: grid;
+            gap: 5px;
+        }
+        .matrix-grid-container {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 5px;
+        }
+        .row-numbers {
+            display: grid;
+            gap: 5px;
+            align-items: center;
+            text-align: center;
+        }
+        .col-numbers {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .col-number-cell, .row-number-cell {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .col-numbers-4x4 {
+             grid-template-columns: repeat(4, 1fr);
+        }
+
+        .dynamic-matrix-grid {
+            grid-template-columns: repeat(var(--cols), 1fr);
+        }
+
+        /* Common cell styling */
+        .matrix-grid .display-cell, .node-coords-grid .coord-cell {
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+            border-color: #34495e;
+        }
+        /* New styles for node coords */
+        .coords-table-container {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 5px;
+            margin: auto;
+        }
+        .node-coords-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 60px);
+            gap: 5px;
+        }
+        .node-coords-grid .header {
+            font-weight: bold;
+            text-align: center;
+            padding: 5px;
+        }
+        
+        /* Styles for elements table with 5 columns */
+        .elements-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 60px);
+            gap: 5px;
+        }
+
+        /* Color styles for animation */
+        .highlight-yellow { background-color: #ffffb3 !important; }
+        .highlight-blue { background-color: #b3d9ff !important; }
+        .highlight-pink { background-color: #ffb3e6 !important; }
+        .highlight-brown { background-color: #cc9966 !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Global stiffness matrix formation</h1>
+    <div class="statement">
+        <p>A structure consists of <span id="nnValue" class="value"></span> nodes. Each node has <span id="k1Value" class="value"></span> dof. A finite element has 2 nodes. Add this stiffness matrix to the global stiffness matrix.</p>
+    </div>   
+</div>
+<div class="matrices-container">
+    <div class="matrix-section">
+        <h3>Node Coordinates</h3>
+        <div class="matrix-container">
+            <div class="col-numbers" id="nodeCoordsColNumbers"></div>
+            <div class="matrix-grid-container">
+                <div class="row-numbers" id="nodeCoordsRowNumbers"></div>
+                <div class="node-coords-grid" id="nodeCoordsGrid"></div>
+            </div>
+        </div>
+    </div>
+<div class="matrices-container">
+    <div class="matrix-section">
+        <h3>Elements</h3>
+        <div class="matrix-container">
+            <div class="col-numbers" id="elemConnColNumbers"></div>
+            <div class="matrix-grid-container">
+                <div class="row-numbers" id="elemConnRowNumbers"></div>
+                <div class="elements-grid" id="elemConnGrid"></div>
+            </div>
+        </div>
+    </div>
+    <div class="matrix-section">
+        <h3>Element Stiffness Matrix</h3>
+        <label for="n1Value">Node 1:</label>
+        <span id="n1Value" class="value"></span>
+        <label for="n2Value">Node 2:</label>
+        <span id="n2Value" class="value"></span>
+        <div class="matrix-container">
+            <div class="col-numbers" id="elementColNumbers"></div>
+            <div class="matrix-grid-container">
+                <div class="row-numbers" id="elementRowNumbers"></div>
+                <div class="matrix-grid" id="elementMatrixGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="matrix-section">
+        <h3>Global Stiffness Matrix</h3>
+        <div class="controls">
+            <button id="generateBtn">Add Element 1</button>
+        </div>
+        <div class="matrix-container">
+            <div class="col-numbers" id="globalColNumbers"></div>
+            <div class="matrix-grid-container">
+                <div class="row-numbers" id="globalRowNumbers"></div>
+                <div class="matrix-grid" id="globalMatrixGrid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global variables to store matrix values
+    let elementMatrixValues = [];
+    let globalMatrixValues = [];
+
+    const elementGrid = document.getElementById('elementMatrixGrid');
+    const globalGrid = document.getElementById('globalMatrixGrid');
+		
+    const nodeCoordsColContainer = document.getElementById('nodeCoordsColNumbers');
+    const nodeCoordsGridContainer = document.getElementById('nodeCoordsGrid');
+    const nodeCoordsRowContainer = document.getElementById('nodeCoordsRowNumbers');
+		
+    const elemConnColContainer = document.getElementById('elemConnColNumbers');
+    const elemConnGridContainer = document.getElementById('elemConnGrid');
+    const elemConnsRowContainer = document.getElementById('elemConnRowNumbers');
+    
+    // Function to generate a random integer between min and max (inclusive)
+    function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // Generate problem statement values
+    const nn = getRandomInt(4, 10);  // number of nodes
+    const k1 = Math.random() < 0.5 ? 2 : 3; // dof per node
+    const elementMatrixSize = k1 * 2;
+    const globalMatrixSize = nn * k1;
+	Coord = []
+	for (let i = 0; i < nn; i++) {
+		Coord[i] = [];
+		Coord[i][0] = getRandomInt(-20, 20);
+		Coord[i][1] = getRandomInt(-20, 20);
+	}	
+	
+	
+	const numElem = 5;
+    elementConnMat = [];
+	areaEl = []
+	elasEl = []
+	inerEl = []
+	for (let i = 0; i < numElem; i++) {
+		elementConnMat[i] = [];
+		elementConnMat[i][0] = getRandomInt(1, nn);
+		elementConnMat[i][1] = getRandomInt(1, nn);
+		while (elementConnMat[i][0] === elementConnMat[i][1]) {
+			elementConnMat[i][1] = getRandomInt(1, nn);
+		}
+		areaEl[i] =  getRandomInt(1, 20);
+		elasEl[i] = getRandomInt(1, 20);
+		inerEl[i] = getRandomInt(1, 20);
+	}
+	let iElem = 0;
+    let n1 = elementConnMat[iElem][0];
+    let n2 = elementConnMat[iElem][1];
+
+    document.getElementById('nnValue').textContent = nn;
+    document.getElementById('k1Value').textContent = k1;
+    document.getElementById('n1Value').textContent = n1;
+    document.getElementById('n2Value').textContent = n2;
+
+    // Helper function for delay
+    const delay = ms => new Promise(res => setTimeout(res, ms));
+
+    // Function to populate number labels
+    function populateNumbers(container, count, isRow) {
+        container.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+            const numCell = document.createElement('div');
+            numCell.textContent = i + 1;
+            numCell.className = isRow ? 'row-number-cell' : 'col-number-cell';
+            container.appendChild(numCell);
+        }
+    }
+
+    // New function to populate node coordinates
+    function populateNodeCoords(colContainer, gridContainer, numNodes) {
+        if (!colContainer || !gridContainer) return;
+        
+        // Populate column headers
+        colContainer.innerHTML = '';
+        const headers = ["X", "Y"];
+        headers.forEach(headerText => {
+            const headerCell = document.createElement('div');
+            headerCell.textContent = headerText;
+            headerCell.className = 'col-number-cell';
+            colContainer.appendChild(headerCell);
+        });
+
+        // Populate with random coordinates
+        gridContainer.innerHTML = '';
+        for (let i = 1; i <= numNodes; i++) {
+            const xCoord = Coord[i-1][0];
+            const xCell = document.createElement('div');
+            xCell.textContent = xCoord;
+            xCell.className = 'coord-cell';
+            gridContainer.appendChild(xCell);
+            
+            const yCoord = Coord[i-1][1];
+            const yCell = document.createElement('div');
+            yCell.textContent = yCoord;
+            yCell.className = 'coord-cell';
+            gridContainer.appendChild(yCell);
+        }
+    }
+    
+    function populateConnTable(colContainer, gridContainer, numElements) {
+        if (!colContainer || !gridContainer) return;
+        
+        // Populate column headers - now with 5 columns
+        colContainer.innerHTML = '';
+        const headers = ["Node 1", "Node 2", "Area", "E", "I"];
+        headers.forEach(headerText => {
+            const headerCell = document.createElement('div');
+            headerCell.textContent = headerText;
+            headerCell.className = 'col-number-cell';
+            colContainer.appendChild(headerCell);
+        });
+
+        // Populate with element data (5 columns per element)
+        gridContainer.innerHTML = '';
+        for (let i = 1; i <= numElements; i++) {
+            // Node 1
+            const mm1 = elementConnMat[i-1][0];    
+            const node1Cell = document.createElement('div');
+            node1Cell.textContent = mm1;
+            node1Cell.className = 'coord-cell';
+            gridContainer.appendChild(node1Cell);
+            
+            // Node 2
+            const mm2 = elementConnMat[i-1][1];
+            const node2Cell = document.createElement('div');
+            node2Cell.textContent = mm2;
+            node2Cell.className = 'coord-cell';
+            gridContainer.appendChild(node2Cell);
+            
+            // Area
+            const areaCell = document.createElement('div');
+            areaCell.textContent = areaEl[i-1];
+            areaCell.className = 'coord-cell';
+            gridContainer.appendChild(areaCell);
+            
+            // E (Modulus of Elasticity)
+            const eCell = document.createElement('div');
+            eCell.textContent = elasEl[i-1];
+            eCell.className = 'coord-cell';
+            gridContainer.appendChild(eCell);
+            
+            // I (Moment of Inertia)
+            const iCell = document.createElement('div');
+            iCell.textContent = inerEl[i-1];
+            iCell.className = 'coord-cell';
+            gridContainer.appendChild(iCell);
+        }
+    }
+    
+    // Populate a symmetric matrix and store its values globally
+    function populateSymmetricMatrix(container, size, iElem1) {
+        if (!container) return;
+
+        elementMatrixValues = [];
+		iRandon = 0;
+		console.log("iElem1 = ", iElem1); 
+		const mm1 = elementConnMat[iElem1][0] - 1; 
+		const mm2 = elementConnMat[iElem1][1] - 1; 
+		console.log("mm1 = ", mm1, "mm2 = ", mm2); 
+		x1 = Coord[mm1][0];
+		x2 = Coord[mm2][0];
+		y1 = Coord[mm1][1];
+		y2 = Coord[mm2][1];
+		console.log("x1 = ", x1, "y1= ", y1); 
+		console.log("x2 = ", x2, "y2= ", y2); 
+		if (iRandon === 1) {
+			for (let i = 0; i < size; i++) {
+				elementMatrixValues[i] = [];
+				for (let j = 0; j < size; j++) {
+					const randomValue = (i <= j) ? getRandomInt(-10, 10) : elementMatrixValues[j][i];
+					elementMatrixValues[i][j] = randomValue;
+				}
+			}
+		} else {
+			if (size === 6) {
+				elementMatrixValues = elementStiffness(elasEl[iElem1], areaEl[iElem1], inerEl[iElem1], x1, y1, x2, y2, "frame");
+			} else {
+				elementMatrixValues = elementStiffness(elasEl[iElem1], areaEl[iElem1], inerEl[iElem1], x1, y1, x2, y2, "truss");
+			}
+		}
+		
+        container.innerHTML = '';
+        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                const cell = document.createElement('div');
+                cell.className = 'display-cell';
+                cell.textContent = elementMatrixValues[i][j].toFixed(2);
+                container.appendChild(cell);
+            }
+        }
+    }
+
+    // Populate a matrix with a custom initial value (e.g., 0)
+    function populateMatrix(container, rows, cols, initialValue) {
+        if (!container) return;
+        globalMatrixValues = Array.from({ length: rows }, () => Array(cols).fill(initialValue));
+
+        container.innerHTML = '';
+        container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                const cell = document.createElement('div');
+                cell.className = 'display-cell';
+                cell.textContent = initialValue;
+                container.appendChild(cell);
+            }
+        }
+    }
+
+    // Function to update current element info
+    function updateCurrentElement(elemIndex) {
+        n1 = elementConnMat[elemIndex][0];
+        n2 = elementConnMat[elemIndex][1];
+        document.getElementById('n1Value').textContent = n1;
+        document.getElementById('n2Value').textContent = n2;
+    }
+
+    // Function to reset global matrix background to white
+    function resetGlobalMatrixBackground() {
+        const globalCells = document.getElementById('globalMatrixGrid').querySelectorAll('.display-cell');
+        globalCells.forEach(cell => {
+            cell.style.backgroundColor = '#f8f9fa'; // Reset to original background
+        });
+    }
+
+    // Function to highlight element connectivity row
+    function highlightElementConnectivityRow(elemIndex) {
+        const elemConnCells = document.getElementById('elemConnGrid').querySelectorAll('.coord-cell');
+        // Reset all cells first
+        elemConnCells.forEach(cell => {
+            cell.style.backgroundColor = '#f8f9fa';
+        });
+        
+        // Highlight the current element row (5 cells per row now)
+        const startIndex = elemIndex * 5;
+        for (let i = startIndex; i < startIndex + 5; i++) {
+            if (elemConnCells[i]) {
+                elemConnCells[i].style.backgroundColor = '#ffffb3'; // Yellow highlight
+            }
+        }
+    }
+
+    // Asynchronous function to add local to global matrix with animation
+    async function addMatrixElements() {
+        // Reset global matrix background to white before starting
+        resetGlobalMatrixBackground();
+        
+        // Highlight the corresponding row in Elements table
+        highlightElementConnectivityRow(iElem);
+        
+        const elementMatrixContainer = document.getElementById('elementMatrixGrid');
+        const globalMatrixContainer = document.getElementById('globalMatrixGrid');
+        const elementSize = k1 * 2;
+        const globalSize = nn * k1;
+        
+        const elementCells = elementMatrixContainer.querySelectorAll('.display-cell');
+        const globalCells = globalMatrixContainer.querySelectorAll('.display-cell');
+
+        const globalStartIndex1 = (n1 - 1) * k1;
+        const globalStartIndex2 = (n2 - 1) * k1;
+        const nodeIndices = [globalStartIndex1, globalStartIndex2];
+
+        // First, highlight the sub-matrix location in the global matrix
+        for (let i = 0; i < elementSize; i++) {
+            for (let j = 0; j < elementSize; j++) {
+                const globalRow = nodeIndices[Math.floor(i / k1)] + (i % k1);
+                const globalCol = nodeIndices[Math.floor(j / k1)] + (j % k1);
+                const globalElementIndex = globalRow * globalSize + globalCol;
+                
+                globalCells[globalElementIndex].style.backgroundColor = '#d9eaff'; // Light blue
+            }
+        }
+        await delay(2000);
+
+        // Then, proceed with the element-by-element assembly
+        for (let i = 0; i < elementSize; i++) {
+            for (let j = 0; j < elementSize; j++) {
+                const localElementIndex = i * elementSize + j;
+                const globalRow = nodeIndices[Math.floor(i / k1)] + (i % k1);
+                const globalCol = nodeIndices[Math.floor(j / k1)] + (j % k1);
+                const globalElementIndex = globalRow * globalSize + globalCol;
+
+                // Determine the correct color based on dof mapping
+                let highlightColor = '';
+                const dofGroupRow = Math.floor(i / k1);
+                const dofGroupCol = Math.floor(j / k1);
+
+                if (dofGroupRow === 0 && dofGroupCol === 0) { // Node 1 interaction
+                    highlightColor = '#b3d9ff'; // Blue
+                } else if (dofGroupRow === 1 && dofGroupCol === 1) { // Node 2 interaction
+                    highlightColor = '#ffb3e6'; // Pink
+                } else { // Interaction between Node 1 and Node 2
+                    highlightColor = '#cc9966'; // Brown
+                }
+
+                // Highlight local and global cells
+                elementCells[localElementIndex].style.backgroundColor = '#ffffb3'; // Yellow for attention
+                globalCells[globalElementIndex].style.backgroundColor = '#ffffb3';
+                await delay(1000);
+
+                // Update value and apply final color
+                const currentValue = parseFloat(globalMatrixValues[globalRow][globalCol]);
+                const newValue = currentValue + elementMatrixValues[i][j];
+                globalMatrixValues[globalRow][globalCol] = newValue;
+                globalCells[globalElementIndex].textContent = newValue.toFixed(2);
+
+                elementCells[localElementIndex].style.backgroundColor = highlightColor;
+                globalCells[globalElementIndex].style.backgroundColor = highlightColor;
+                await delay(1500); // Pause to admire the final color
+            }
+        }
+    }
+
+    // Event listener for the "Add Element" button
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('generateBtn');
+        
+        // Change button to "Adding Element X" state
+        btn.textContent = `Adding Element ${iElem + 1}`;
+        btn.classList.add('adding');
+        btn.disabled = true;
+        
+        // Add the current element to global matrix
+        await addMatrixElements();
+        
+        // Move to next element
+        iElem = iElem + 1;
+        
+        // Update button state after completion
+        btn.classList.remove('adding');
+        btn.disabled = false;
+        
+        if (iElem < numElem) {
+            // Prepare for next element
+            btn.textContent = `Add Element ${iElem + 1}`;
+            updateCurrentElement(iElem);
+            populateSymmetricMatrix(elementGrid, elementMatrixSize, iElem);
+        } else {
+            // All elements have been added
+            btn.textContent = "All Elements have been added";
+            btn.disabled = true;
+        }
+    });
+
+    function elementStiffness(E, A, I, x1, y1, x2, y2, type="frame") {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const L = Math.sqrt(dx*dx + dy*dy);
+      const c = dx / L;
+      const s = dy / L;
+	  console.log("dx = ", dx, "dy= ", dy, " L = ", L); 
+	  console.log("E = ", E, "A= ", A, " I = ", I)
+      if (type === "truss") {
+        // --- 2D Truss Element ---
+        const k = (E * A) / L;
+
+        // local stiffness matrix in local coordinates
+        const k_local = [
+          [ 1,  0, -1,  0],
+          [ 0,  0,  0,  0],
+          [-1,  0,  1,  0],
+          [ 0,  0,  0,  0]
+        ].map(row => row.map(val => val * k));
+
+        // transformation matrix (4x4)
+        const T = [
+          [ c,  s, 0, 0],
+          [-s,  c, 0, 0],
+          [ 0,  0, c, s],
+          [ 0,  0,-s, c]
+        ];
+
+        function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+        function matMul(A,B){
+          const n=A.length, m=B[0].length, p=B.length;
+          let C = Array.from({length:n},()=>Array(m).fill(0));
+          for(let i=0;i<n;i++){
+            for(let j=0;j<m;j++){
+              for(let k=0;k<p;k++){
+                C[i][j]+=A[i][k]*B[k][j];
+              }
+            }
+          }
+          return C;
+        }
+
+        return matMul(transpose(T), matMul(k_local, T));
+
+      } else if (type === "frame") {
+        // --- 2D Frame Element (6x6) ---
+        const k_ax = (E * A) / L;
+        const k_b  = (E * I) / (L*L*L);
+
+        let k_local = Array.from({length:6},()=>Array(6).fill(0));
+
+        // axial part
+        k_local[0][0] =  k_ax;  k_local[0][3] = -k_ax;
+        k_local[3][0] = -k_ax;  k_local[3][3] =  k_ax;
+
+        // bending part
+        const kb = [
+          [12,   6*L,  -12,   6*L],
+          [6*L,  4*L*L,-6*L,  2*L*L],
+          [-12, -6*L,  12,  -6*L],
+          [6*L,  2*L*L,-6*L,  4*L*L]
+        ].map(row => row.map(v => v * k_b));
+
+        const inds = [1,2,4,5];
+        for (let i=0;i<4;i++){
+          for (let j=0;j<4;j++){
+            k_local[inds[i]][inds[j]] = kb[i][j];
+          }
+        }
+
+        // transformation matrix (6x6)
+        let T = Array.from({length:6},()=>Array(6).fill(0));
+        T[0][0] =  c; T[0][1] = -s;
+        T[1][0] =  s; T[1][1] =  c;
+        T[2][2] =  1;
+        T[3][3] =  c; T[3][4] = -s;
+        T[4][3] =  s; T[4][4] =  c;
+        T[5][5] =  1;
+
+        function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+        function matMul(A,B){
+          const n=A.length, m=B[0].length, p=B.length;
+          let C = Array.from({length:n},()=>Array(m).fill(0));
+          for(let i=0;i<n;i++){
+            for(let j=0;j<m;j++){
+              for(let k=0;k<p;k++){
+                C[i][j]+=A[i][k]*B[k][j];
+              }
+            }
+          }
+          return C;
+        }
+
+        return matMul(transpose(T), matMul(k_local, T));
+      }
+    }
+
+    // Populate matrices and numbers on page load
+    window.onload = function() {
+        // Initialize all matrices and data
+        populateNodeCoords(nodeCoordsColContainer, nodeCoordsGridContainer, nn);
+        populateConnTable(elemConnColContainer, elemConnGridContainer, numElem);
+        populateSymmetricMatrix(elementGrid, elementMatrixSize, 0);
+        populateMatrix(globalGrid, globalMatrixSize, globalMatrixSize, 0);
+        populateNumbers(nodeCoordsRowContainer, nn, true);
+        populateNumbers(elemConnsRowContainer, numElem, true);
+
+        populateNumbers(document.getElementById('elementColNumbers'), elementMatrixSize, false);
+        populateNumbers(document.getElementById('elementRowNumbers'), elementMatrixSize, true);
+        populateNumbers(document.getElementById('globalColNumbers'), globalMatrixSize, false);
+        populateNumbers(document.getElementById('globalRowNumbers'), globalMatrixSize, true);
+    };
+</script>
+
+</body>
+</html>
